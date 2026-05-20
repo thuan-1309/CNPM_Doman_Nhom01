@@ -1,0 +1,72 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - CNPM_Doman_Nhom01</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/CNPM_Doman_Nhom01.styles.css" asp-append-version="true" />
+</head>
+<body>
+    <header>
+        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-dark bg-dark border-bottom border-secondary box-shadow mb-3">
+            <div class="container-fluid">
+                <a class="navbar-brand text-white fw-bold" asp-area="" asp-controller="Home" asp-action="Index">CNPM_Doman_Nhom01</a>
+
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
+                        aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+
+                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
+                    <ul class="navbar-nav flex-grow-1">
+                        <li class="nav-item">
+                            <a class="nav-link text-light" asp-area="" asp-controller="Home" asp-action="Index">
+                                <i class="bi bi-house-door"></i> Trang Chủ
+                            </a>
+                        </li>
+
+                        <li class="nav-item ms-3">
+                            <a class="nav-link text-light" asp-area="" asp-controller="Sach" asp-action="Index">
+                                <i class="bi bi-book"></i> Quản lý Sách
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-light" asp-area="" asp-controller="DocGia" asp-action="Index">
+                                <i class="bi bi-people"></i> Quản lý Độc Giả
+                            </a>
+                        </li>
+
+                        <li class="nav-item ms-auto">
+                            <a class="nav-link text-danger fw-bold" asp-area="" asp-controller="PhieuMuon" asp-action="LapPhieu">
+                                <i class="bi bi-plus-circle"></i> Lập Phiếu Mượn
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-danger fw-bold" asp-area="" asp-controller="PhieuMuon" asp-action="TraSach">
+                                <i class="bi bi-arrow-return-left"></i> Trả Sách
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+    </header>
+    <div class="container">
+        <main role="main" class="pb-3">
+            @RenderBody()
+        </main>
+    </div>
+
+    <footer class="border-top footer text-muted">
+        <div class="container">
+            &copy; 2026 - CNPM_Doman_Nhom01 - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+        </div>
+    </footer>
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

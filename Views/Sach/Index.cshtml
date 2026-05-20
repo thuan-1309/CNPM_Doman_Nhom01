@@ -1,0 +1,130 @@
+﻿@{
+    ViewData["Title"] = "Quản lý Sách";
+}
+
+<style>
+    body {
+        background-color: #121212;
+        color: #ffffff;
+    }
+
+    .card-dark {
+        background-color: #1e1e1e;
+        border: 1px solid #333;
+        border-radius: 8px;
+        padding: 25px;
+    }
+
+    .title-red {
+        color: #dc3545;
+        font-weight: bold;
+        text-transform: uppercase;
+        margin-bottom: 20px;
+    }
+
+    .table-dark-custom {
+        color: #fff;
+        border-color: #333;
+    }
+
+    .modal-content-dark {
+        background-color: #1e1e1e;
+        color: #fff;
+        border: 1px solid #dc3545;
+    }
+
+    .form-control-dark {
+        background-color: #2b2b2b;
+        border: 1px solid #444;
+        color: #fff;
+    }
+
+        .form-control-dark:focus {
+            background-color: #333;
+            color: #fff;
+            border-color: #dc3545;
+            box-shadow: none;
+        }
+</style>
+
+<div class="container mt-4">
+    <div class="card-dark shadow">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h4 class="title-red mb-0">DANH MỤC SÁCH</h4>
+            <button class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#modalThemSach">
+                <i class="bi bi-plus-lg"></i> Thêm Sách Mới
+            </button>
+        </div>
+
+        <table class="table table-dark-custom table-hover text-center">
+            <thead>
+                <tr class="text-secondary">
+                    <th>MÃ SÁCH</th>
+                    <th class="text-start">TÊN SÁCH</th>
+                    <th>TÁC GIẢ</th>
+                    <th>TỒN KHO</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var s in ViewBag.ListSach)
+                {
+                    <tr>
+                        <td class="text-danger fw-bold">@s.MaSach</td>
+                        <td class="text-start">@s.TenSach</td>
+                        <td>@s.TacGia</td>
+                        <td><span class="badge bg-secondary">@s.SoLuongTon</span></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="modal fade" id="modalThemSach" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content modal-content-dark">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title text-danger">THÊM SÁCH MỚI</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Mã Sách</label>
+                    <input type="text" id="mMaSach" class="form-control form-control-dark" placeholder="VD: MS009">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Tên Sách</label>
+                    <input type="text" id="mTenSach" class="form-control form-control-dark">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Tác Giả</label>
+                    <input type="text" id="mTacGia" class="form-control form-control-dark">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Số Lượng Nhập</label>
+                    <input type="number" id="mSoLuong" class="form-control form-control-dark" value="1">
+                </div>
+            </div>
+            <div class="modal-footer border-secondary">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-danger" onclick="ajaxThemSach()">Lưu Dữ Liệu</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function ajaxThemSach() {
+        const data = {
+            maSach: document.getElementById('mMaSach').value,
+            tenSach: document.getElementById('mTenSach').value,
+            tacGia: document.getElementById('mTacGia').value,
+            soLuong: document.getElementById('mSoLuong').value
+        };
+
+        $.post('/Sach/ThemSach', data, function(res) {
+            alert(res.message);
+            if(res.success) window.location.reload();
+        });
+    }
+</script>

@@ -1,0 +1,123 @@
+﻿@{
+    ViewData["Title"] = "Quản lý Độc Giả";
+}
+
+<style>
+    body {
+        background-color: #121212;
+        color: #ffffff;
+    }
+
+    .card-dark {
+        background-color: #1e1e1e;
+        border: 1px solid #333;
+        border-radius: 8px;
+        padding: 25px;
+    }
+
+    .title-red {
+        color: #dc3545;
+        font-weight: bold;
+        text-transform: uppercase;
+        margin-bottom: 20px;
+    }
+
+    .table-dark-custom {
+        color: #fff;
+        border-color: #333;
+    }
+
+    .modal-content-dark {
+        background-color: #1e1e1e;
+        color: #fff;
+        border: 1px solid #dc3545;
+    }
+
+    .form-control-dark {
+        background-color: #2b2b2b;
+        border: 1px solid #444;
+        color: #fff;
+    }
+</style>
+
+<div class="container mt-4">
+    <div class="card-dark shadow">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h4 class="title-red mb-0">DANH MỤC ĐỘC GIẢ</h4>
+            <button class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#modalThemDG">
+                <i class="bi bi-person-plus"></i> Đăng Ký Độc Giả
+            </button>
+        </div>
+
+        <table class="table table-dark-custom table-hover text-center">
+            <thead>
+                <tr class="text-secondary">
+                    <th>MÃ ĐG</th>
+                    <th class="text-start">TÊN ĐỘC GIẢ</th>
+                    <th>SỐ ĐIỆN THOẠI</th>
+                    <th class="text-start">ĐỊA CHỈ</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var dg in ViewBag.ListDocGia)
+                {
+                    <tr>
+                        <td class="text-danger fw-bold">@dg.MaDocGia</td>
+                        <td class="text-start">@dg.TenDocGia</td>
+                        <td>@dg.SoDienThoai</td>
+                        <td class="text-start text-truncate" style="max-width: 250px;">@dg.DiaChi</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="modal fade" id="modalThemDG" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content modal-content-dark">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title text-danger">ĐĂNG KÝ ĐỘC GIẢ MỚI</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Mã Độc Giả</label>
+                    <input type="text" id="mMaDG" class="form-control form-control-dark" placeholder="VD: DG011">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Họ và Tên</label>
+                    <input type="text" id="mTenDG" class="form-control form-control-dark">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Số Điện Thoại</label>
+                    <input type="text" id="mSDT" class="form-control form-control-dark">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Địa Chỉ</label>
+                    <input type="text" id="mDiaChi" class="form-control form-control-dark">
+                </div>
+            </div>
+            <div class="modal-footer border-secondary">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-danger" onclick="ajaxThemDG()">Xác Nhận Đăng Ký</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function ajaxThemDG() {
+        const data = {
+            maDG: document.getElementById('mMaDG').value,
+            tenDG: document.getElementById('mTenDG').value,
+            sdt: document.getElementById('mSDT').value,
+            diaChi: document.getElementById('mDiaChi').value
+        };
+
+        $.post('/DocGia/ThemDocGia', data, function(res) {
+            alert(res.message);
+            if(res.success) window.location.reload();
+        });
+    }
+</script>
