@@ -111,7 +111,7 @@
     <div class="card-dark">
         <div class="card-header-dark">
             <h4 class="title-red">TRẢ SÁCH</h4>
-            <button class="btn btn-sm btn-outline-light-custom"><i class="bi bi-arrow-return-left"></i> Quay lại</button>
+            <button onclick="history.back()" class="btn btn-sm btn-outline-light-custom"><i class="bi bi-arrow-return-left"></i> Quay lại</button>
         </div>
 
         <div class="card-body p-4">
@@ -159,6 +159,8 @@
                                 <th>Ngày mượn</th>
                                 <th>Hạn trả</th>
                                 <th>Tình trạng</th>
+                                <th>Quá hạn</th>
+                                <th>Tiền phạt</th>
                                 <th>Chọn trả</th>
                             </tr>
                         </thead>
@@ -203,19 +205,19 @@
                 tbody.innerHTML = '';
 
                 if(data.success) {
-                    // Fix lỗi parse key (Dictionary giữ nguyên hoa thường, Anonymous type bị viết thường)
                     document.getElementById('txtDocGia').value = data.info.TenDocGia || data.info.tenDocGia;
                     document.getElementById('txtNgayMuonInfo').value = data.info.NgayMuon || data.info.ngayMuon;
                     document.getElementById('txtHanTraInfo').value = data.info.HanTra || data.info.hanTra;
 
                     let stt = 1;
                     data.dsSach.forEach(sach => {
-                        // Lấy dữ liệu với cơ chế dự phòng (phòng trường hợp version .NET khác nhau)
                         let tinhTrang = sach.tinhTrangTra || sach.TinhTrangTra;
                         let maSach = sach.maSach || sach.MaSach;
                         let tenSach = sach.tenSach || sach.TenSach;
                         let ngayMuon = sach.ngayMuon || sach.NgayMuon;
                         let hanTra = sach.hanTra || sach.HanTra;
+                        let soNgayTre = sach.soNgayTre ?? sach.SoNgayTre ?? 0;
+                        let tienPhat = sach.tienPhat ?? sach.TienPhat ?? 0;
 
                         let isDaTra = tinhTrang === 'Đã trả';
                         let colorStatus = isDaTra ? 'text-secondary' : 'text-success-custom';
@@ -228,6 +230,8 @@
                                 <td>${ngayMuon}</td>
                                 <td>${hanTra}</td>
                                 <td class="${colorStatus}">${tinhTrang}</td>
+                                <td>${soNgayTre > 0 ? soNgayTre + ' ngày' : 'Đúng hạn'}</td>
+                                <td>${Number(tienPhat).toLocaleString()}đ</td>
                                 <td>
                                     <input class="form-check-input chk-tra" type="checkbox" ${isDaTra ? 'disabled' : ''}>
                                 </td>
@@ -251,7 +255,7 @@
             let maSachTra = [];
             document.querySelectorAll('.chk-tra:checked:not(:disabled)').forEach(chk => {
                 const tr = chk.closest('tr');
-                maSachTra.push(tr.querySelector('.ma-sach-cell').innerText);
+                maSachTra.push(tr.querySelector('.ma-sach-cell').innerText.trim());
             });
 
             if(maSachTra.length === 0) return alert("Bạn chưa chọn sách nào để trả!");
@@ -260,15 +264,25 @@
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    MaPhieuMuon: maPhieu, GhiChu: ghiChu, MaSachTra: maSachTra
+                    MaPhieuMuon: maPhieu,
+                    GhiChu: ghiChu,
+                    MaSachTra: maSachTra
                 })
             })
             .then(res => res.json())
             .then(data => {
-                alert(data.message);
                 if(data.success) {
-                    // Cập nhật lại giao diện bảng tìm kiếm sau khi trả thành công
+                    // Nếu có ngày trễ thì báo phạt, không thì báo trả thành công bình thường
+                    let alertMsg = data.message;
+                    if(data.soNgayTre > 0){
+                         alertMsg += "\nSố ngày trễ: " + data.soNgayTre + "\nTiền phạt: " + data.tienPhat.toLocaleString() + " VNĐ";
+                    }
+                    alert(alertMsg);
+
+                    // Refresh lại bảng tìm kiếm
                     document.getElementById('btnTimKiem').click();
+                } else {
+                    alert(data.message);
                 }
             });
         });

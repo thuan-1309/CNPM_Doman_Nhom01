@@ -1,6 +1,12 @@
-﻿using CNPM_Doman_Nhom01.Models;
+﻿// ===============================
+// PhieuMuonController.cs (FULL)
+// ===============================
+
+using CNPM_Doman_Nhom01.Models; // Giữ nguyên namespace Models của nhóm
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
+using System;
+using System.Collections.Generic;
 using System.Data;
 
 namespace CNPM_Doman_Nhom01.Controllers
@@ -11,13 +17,12 @@ namespace CNPM_Doman_Nhom01.Controllers
 
         public PhieuMuonController(IConfiguration configuration)
         {
-            // Bắt lỗi nếu không tìm thấy chuỗi kết nối trong appsettings.json
             _connectionString = configuration.GetConnectionString("DefaultConnection")
-                ?? throw new InvalidOperationException("Không tìm thấy chuỗi kết nối 'DefaultConnection'.");
+                ?? throw new InvalidOperationException("Không tìm thấy chuỗi kết nối.");
         }
 
         // ==========================================
-        // 1. GIAO DIỆN LẬP PHIẾU MƯỢN
+        // 1. GIAO DIỆN LẬP PHIẾU
         // ==========================================
         public IActionResult LapPhieu()
         {
@@ -27,8 +32,7 @@ namespace CNPM_Doman_Nhom01.Controllers
             using (SqlConnection conn = new SqlConnection(_connectionString))
             {
                 conn.Open();
-
-                // Lấy danh sách độc giả
+                // ĐỘC GIẢ
                 SqlCommand cmdDG = new SqlCommand("SELECT MaDocGia, TenDocGia, SoDienThoai, DiaChi FROM DocGia", conn);
                 using (var reader = cmdDG.ExecuteReader())
                 {
@@ -36,15 +40,15 @@ namespace CNPM_Doman_Nhom01.Controllers
                     {
                         listDocGia.Add(new
                         {
-                            MaDocGia = reader["MaDocGia"]?.ToString() ?? "",
-                            TenDocGia = reader["TenDocGia"]?.ToString() ?? "",
-                            SoDienThoai = reader["SoDienThoai"]?.ToString() ?? "",
-                            DiaChi = reader["DiaChi"]?.ToString() ?? ""
+                            MaDocGia = reader["MaDocGia"].ToString(),
+                            TenDocGia = reader["TenDocGia"].ToString(),
+                            SoDienThoai = reader["SoDienThoai"].ToString(),
+                            DiaChi = reader["DiaChi"].ToString()
                         });
                     }
                 }
 
-                // Lấy danh sách sách còn tồn kho
+                // SÁCH
                 SqlCommand cmdSach = new SqlCommand("SELECT MaSach, TenSach, TacGia, SoLuongTon FROM Sach WHERE SoLuongTon > 0", conn);
                 using (var reader = cmdSach.ExecuteReader())
                 {
@@ -52,10 +56,10 @@ namespace CNPM_Doman_Nhom01.Controllers
                     {
                         listSach.Add(new
                         {
-                            MaSach = reader["MaSach"]?.ToString() ?? "",
-                            TenSach = reader["TenSach"]?.ToString() ?? "",
-                            TacGia = reader["TacGia"]?.ToString() ?? "",
-                            SoLuongTon = reader["SoLuongTon"] != DBNull.Value ? (int)reader["SoLuongTon"] : 0
+                            MaSach = reader["MaSach"].ToString(),
+                            TenSach = reader["TenSach"].ToString(),
+                            TacGia = reader["TacGia"].ToString(),
+                            SoLuongTon = Convert.ToInt32(reader["SoLuongTon"])
                         });
                     }
                 }
@@ -66,6 +70,9 @@ namespace CNPM_Doman_Nhom01.Controllers
             return View();
         }
 
+        // ==========================================
+        // 2. LƯU PHIẾU MƯỢN
+        // ==========================================
         [HttpPost]
         public IActionResult LuuPhieuMuon([FromBody] PhieuMuonRequest request)
         {
@@ -73,14 +80,18 @@ namespace CNPM_Doman_Nhom01.Controllers
             {
                 conn.Open();
                 SqlTransaction transaction = conn.BeginTransaction();
+
                 try
                 {
                     string maPhieu = "PM" + DateTime.Now.ToString("HHmmss");
 
-                    string sqlPhieu = "INSERT INTO PhieuMuon (MaPhieuMuon, MaDocGia, NgayMuon, HanTra, ThuThu, GhiChu, TrangThai) VALUES (@Ma, @DG, @Ngay, @Han, 'admin', @GC, N'Đang mượn')";
+                    string sqlPhieu = @"
+                        INSERT INTO PhieuMuon (MaPhieuMuon, MaDocGia, NgayMuon, HanTra, ThuThu, GhiChu, TrangThai)
+                        VALUES (@Ma, @DG, @Ngay, @Han, 'admin', @GC, N'Đang mượn')";
+
                     SqlCommand cmdPhieu = new SqlCommand(sqlPhieu, conn, transaction);
                     cmdPhieu.Parameters.AddWithValue("@Ma", maPhieu);
-                    cmdPhieu.Parameters.AddWithValue("@DG", request.MaDocGia ?? (object)DBNull.Value);
+                    cmdPhieu.Parameters.AddWithValue("@DG", request.MaDocGia);
                     cmdPhieu.Parameters.AddWithValue("@Ngay", request.NgayMuon);
                     cmdPhieu.Parameters.AddWithValue("@Han", request.HanTra);
                     cmdPhieu.Parameters.AddWithValue("@GC", string.IsNullOrEmpty(request.GhiChu) ? DBNull.Value : request.GhiChu);
@@ -88,18 +99,20 @@ namespace CNPM_Doman_Nhom01.Controllers
 
                     foreach (var sach in request.DanhSachSach)
                     {
-                        string sqlCT = "INSERT INTO ChiTietPhieuMuon (MaPhieuMuon, MaSach, SoLuong, TinhTrangTra) VALUES (@MaP, @MaS, @SL, N'Chưa trả')";
+                        string sqlCT = @"
+                            INSERT INTO ChiTietPhieuMuon (MaPhieuMuon, MaSach, SoLuong, TinhTrangTra)
+                            VALUES (@MaP, @MaS, @SL, N'Chưa trả')";
                         SqlCommand cmdCT = new SqlCommand(sqlCT, conn, transaction);
                         cmdCT.Parameters.AddWithValue("@MaP", maPhieu);
-                        cmdCT.Parameters.AddWithValue("@MaS", sach.MaSach ?? (object)DBNull.Value);
+                        cmdCT.Parameters.AddWithValue("@MaS", sach.MaSach);
                         cmdCT.Parameters.AddWithValue("@SL", sach.SoLuong);
                         cmdCT.ExecuteNonQuery();
 
-                        string sqlTruSach = "UPDATE Sach SET SoLuongTon = SoLuongTon - @SL WHERE MaSach = @MaS";
-                        SqlCommand cmdTruSach = new SqlCommand(sqlTruSach, conn, transaction);
-                        cmdTruSach.Parameters.AddWithValue("@SL", sach.SoLuong);
-                        cmdTruSach.Parameters.AddWithValue("@MaS", sach.MaSach ?? (object)DBNull.Value);
-                        cmdTruSach.ExecuteNonQuery();
+                        string sqlUpdate = "UPDATE Sach SET SoLuongTon = SoLuongTon - @SL WHERE MaSach = @MaS";
+                        SqlCommand cmdUpdate = new SqlCommand(sqlUpdate, conn, transaction);
+                        cmdUpdate.Parameters.AddWithValue("@SL", sach.SoLuong);
+                        cmdUpdate.Parameters.AddWithValue("@MaS", sach.MaSach);
+                        cmdUpdate.ExecuteNonQuery();
                     }
 
                     transaction.Commit();
@@ -108,19 +121,22 @@ namespace CNPM_Doman_Nhom01.Controllers
                 catch (Exception ex)
                 {
                     transaction.Rollback();
-                    return Json(new { success = false, message = "Lỗi: " + ex.Message });
+                    return Json(new { success = false, message = ex.Message });
                 }
             }
         }
 
         // ==========================================
-        // 2. GIAO DIỆN TRẢ SÁCH
+        // 3. GIAO DIỆN TRẢ SÁCH
         // ==========================================
         public IActionResult TraSach()
         {
             return View();
         }
 
+        // ==========================================
+        // 4. TÌM KIẾM PHIẾU
+        // ==========================================
         [HttpGet]
         public IActionResult TimKiemPhieu(string maPhieu)
         {
@@ -128,33 +144,33 @@ namespace CNPM_Doman_Nhom01.Controllers
             {
                 conn.Open();
 
-                SqlCommand cmdCheck = new SqlCommand("SELECT p.MaPhieuMuon, d.TenDocGia, p.NgayMuon, p.HanTra FROM PhieuMuon p JOIN DocGia d ON p.MaDocGia = d.MaDocGia WHERE p.MaPhieuMuon = @MaP", conn);
-                cmdCheck.Parameters.AddWithValue("@MaP", maPhieu);
+                SqlCommand cmdInfo = new SqlCommand(@"
+                    SELECT p.MaPhieuMuon, d.TenDocGia, p.NgayMuon, p.HanTra
+                    FROM PhieuMuon p JOIN DocGia d ON p.MaDocGia = d.MaDocGia
+                    WHERE p.MaPhieuMuon = @MaP", conn);
+                cmdInfo.Parameters.AddWithValue("@MaP", maPhieu);
 
-                var phieuInfo = new Dictionary<string, string>();
-                using (var reader = cmdCheck.ExecuteReader())
+                var info = new Dictionary<string, string>();
+                using (var reader = cmdInfo.ExecuteReader())
                 {
                     if (reader.Read())
                     {
-                        // Thêm dấu ? và xử lý null để fix lỗi Dictionary
-                        phieuInfo.Add("TenDocGia", reader["TenDocGia"]?.ToString() ?? "");
-
-                        DateTime ngayMuon = reader["NgayMuon"] != DBNull.Value ? Convert.ToDateTime(reader["NgayMuon"]) : DateTime.MinValue;
-                        DateTime hanTra = reader["HanTra"] != DBNull.Value ? Convert.ToDateTime(reader["HanTra"]) : DateTime.MinValue;
-
-                        phieuInfo.Add("NgayMuon", ngayMuon.ToString("dd/MM/yyyy"));
-                        phieuInfo.Add("HanTra", hanTra.ToString("dd/MM/yyyy"));
+                        info.Add("TenDocGia", reader["TenDocGia"].ToString());
+                        info.Add("NgayMuon", Convert.ToDateTime(reader["NgayMuon"]).ToString("dd/MM/yyyy"));
+                        info.Add("HanTra", Convert.ToDateTime(reader["HanTra"]).ToString("dd/MM/yyyy"));
                     }
                     else
                     {
-                        return Json(new { success = false, message = "Không tìm thấy mã phiếu này!" });
+                        return Json(new { success = false, message = "Không tìm thấy phiếu mượn!" });
                     }
                 }
 
-                var listSach = new List<dynamic>();
+                var dsSach = new List<dynamic>();
                 SqlCommand cmdSach = new SqlCommand(@"
-                    SELECT c.MaSach, s.TenSach, p.NgayMuon, p.HanTra, c.TinhTrangTra 
-                    FROM ChiTietPhieuMuon c JOIN Sach s ON c.MaSach = s.MaSach JOIN PhieuMuon p ON c.MaPhieuMuon = p.MaPhieuMuon
+                    SELECT c.MaSach, s.TenSach, p.NgayMuon, p.HanTra, c.TinhTrangTra
+                    FROM ChiTietPhieuMuon c
+                    JOIN Sach s ON c.MaSach = s.MaSach
+                    JOIN PhieuMuon p ON c.MaPhieuMuon = p.MaPhieuMuon
                     WHERE c.MaPhieuMuon = @MaP", conn);
                 cmdSach.Parameters.AddWithValue("@MaP", maPhieu);
 
@@ -162,49 +178,74 @@ namespace CNPM_Doman_Nhom01.Controllers
                 {
                     while (reader.Read())
                     {
-                        DateTime ngayMuonSach = reader["NgayMuon"] != DBNull.Value ? Convert.ToDateTime(reader["NgayMuon"]) : DateTime.MinValue;
-                        DateTime hanTraSach = reader["HanTra"] != DBNull.Value ? Convert.ToDateTime(reader["HanTra"]) : DateTime.MinValue;
+                        DateTime hanTra = Convert.ToDateTime(reader["HanTra"]);
+                        DateTime ngayHienTai = DateTime.Now;
 
-                        listSach.Add(new
+                        int soNgayTre = (ngayHienTai - hanTra).Days;
+                        if (soNgayTre < 0) soNgayTre = 0;
+                        decimal tienPhat = soNgayTre * 5000;
+
+                        dsSach.Add(new
                         {
-                            MaSach = reader["MaSach"]?.ToString() ?? "",
-                            TenSach = reader["TenSach"]?.ToString() ?? "",
-                            NgayMuon = ngayMuonSach.ToString("dd/MM/yyyy"),
-                            HanTra = hanTraSach.ToString("dd/MM/yyyy"),
-                            TinhTrangTra = reader["TinhTrangTra"]?.ToString() ?? ""
+                            MaSach = reader["MaSach"].ToString(),
+                            TenSach = reader["TenSach"].ToString(),
+                            NgayMuon = Convert.ToDateTime(reader["NgayMuon"]).ToString("dd/MM/yyyy"),
+                            HanTra = hanTra.ToString("dd/MM/yyyy"),
+                            TinhTrangTra = reader["TinhTrangTra"].ToString(),
+                            SoNgayTre = soNgayTre, // Đã bổ sung đẩy ngày trễ ra UI
+                            TienPhat = tienPhat    // Đã bổ sung đẩy tiền phạt ra UI
                         });
                     }
                 }
 
-                return Json(new { success = true, info = phieuInfo, dsSach = listSach });
+                return Json(new { success = true, info, dsSach });
             }
         }
 
+        // ==========================================
+        // 5. XÁC NHẬN TRẢ SÁCH + PHẠT
+        // ==========================================
         [HttpPost]
         public IActionResult XacNhanTra([FromBody] TraSachRequest request)
         {
             if (request.MaSachTra == null || request.MaSachTra.Count == 0)
-                return Json(new { success = false, message = "Vui lòng chọn ít nhất 1 sách để trả!" });
+            {
+                return Json(new { success = false, message = "Chưa chọn sách trả!" });
+            }
 
             using (SqlConnection conn = new SqlConnection(_connectionString))
             {
                 conn.Open();
                 SqlTransaction transaction = conn.BeginTransaction();
+
                 try
                 {
+                    SqlCommand cmdHanTra = new SqlCommand("SELECT HanTra FROM PhieuMuon WHERE MaPhieuMuon = @MaP", conn, transaction);
+                    cmdHanTra.Parameters.AddWithValue("@MaP", request.MaPhieuMuon);
+                    DateTime hanTra = Convert.ToDateTime(cmdHanTra.ExecuteScalar());
+                    DateTime ngayTra = DateTime.Now;
+
+                    int soNgayTre = (ngayTra - hanTra).Days;
+                    if (soNgayTre < 0) soNgayTre = 0;
+
+                    // Phạt = Số ngày trễ * 5.000đ * Tổng số lượng cuốn sách được chọn trả
+                    decimal tienPhat = soNgayTre * 5000 * request.MaSachTra.Count;
+
                     foreach (var maSach in request.MaSachTra)
                     {
-                        SqlCommand cmdTra = new SqlCommand("UPDATE ChiTietPhieuMuon SET TinhTrangTra = N'Đã trả' WHERE MaPhieuMuon = @MaP AND MaSach = @MaS", conn, transaction);
-                        cmdTra.Parameters.AddWithValue("@MaP", request.MaPhieuMuon ?? (object)DBNull.Value);
+                        SqlCommand cmdTra = new SqlCommand(@"
+                            UPDATE ChiTietPhieuMuon SET TinhTrangTra = N'Đã trả'
+                            WHERE MaPhieuMuon = @MaP AND MaSach = @MaS", conn, transaction);
+                        cmdTra.Parameters.AddWithValue("@MaP", request.MaPhieuMuon);
                         cmdTra.Parameters.AddWithValue("@MaS", maSach);
                         cmdTra.ExecuteNonQuery();
 
-                        SqlCommand cmdGetSL = new SqlCommand("SELECT SoLuong FROM ChiTietPhieuMuon WHERE MaPhieuMuon = @MaP AND MaSach = @MaS", conn, transaction);
-                        cmdGetSL.Parameters.AddWithValue("@MaP", request.MaPhieuMuon ?? (object)DBNull.Value);
-                        cmdGetSL.Parameters.AddWithValue("@MaS", maSach);
-
-                        object resultSL = cmdGetSL.ExecuteScalar();
-                        int soLuong = resultSL != null && resultSL != DBNull.Value ? (int)resultSL : 0;
+                        SqlCommand cmdSL = new SqlCommand(@"
+                            SELECT SoLuong FROM ChiTietPhieuMuon
+                            WHERE MaPhieuMuon = @MaP AND MaSach = @MaS", conn, transaction);
+                        cmdSL.Parameters.AddWithValue("@MaP", request.MaPhieuMuon);
+                        cmdSL.Parameters.AddWithValue("@MaS", maSach);
+                        int soLuong = Convert.ToInt32(cmdSL.ExecuteScalar());
 
                         SqlCommand cmdCong = new SqlCommand("UPDATE Sach SET SoLuongTon = SoLuongTon + @SL WHERE MaSach = @MaS", conn, transaction);
                         cmdCong.Parameters.AddWithValue("@SL", soLuong);
@@ -212,29 +253,59 @@ namespace CNPM_Doman_Nhom01.Controllers
                         cmdCong.ExecuteNonQuery();
                     }
 
-                    SqlCommand cmdCheckFull = new SqlCommand("SELECT COUNT(*) FROM ChiTietPhieuMuon WHERE MaPhieuMuon = @MaP AND TinhTrangTra != N'Đã trả'", conn, transaction);
-                    cmdCheckFull.Parameters.AddWithValue("@MaP", request.MaPhieuMuon ?? (object)DBNull.Value);
-
-                    object resultRemaining = cmdCheckFull.ExecuteScalar();
-                    int remaining = resultRemaining != null && resultRemaining != DBNull.Value ? (int)resultRemaining : 0;
+                    SqlCommand cmdCheck = new SqlCommand(@"
+                        SELECT COUNT(*) FROM ChiTietPhieuMuon
+                        WHERE MaPhieuMuon = @MaP AND TinhTrangTra != N'Đã trả'", conn, transaction);
+                    cmdCheck.Parameters.AddWithValue("@MaP", request.MaPhieuMuon);
+                    int remaining = Convert.ToInt32(cmdCheck.ExecuteScalar());
 
                     if (remaining == 0)
                     {
-                        SqlCommand cmdUpdatePhieu = new SqlCommand("UPDATE PhieuMuon SET TrangThai = N'Đã trả', GhiChu = ISNULL(GhiChu,'') + @GC WHERE MaPhieuMuon = @MaP", conn, transaction);
-                        cmdUpdatePhieu.Parameters.AddWithValue("@MaP", request.MaPhieuMuon ?? (object)DBNull.Value);
-                        cmdUpdatePhieu.Parameters.AddWithValue("@GC", string.IsNullOrEmpty(request.GhiChu) ? "" : " | Ghi chú trả: " + request.GhiChu);
-                        cmdUpdatePhieu.ExecuteNonQuery();
+                        // Thêm chi tiết phạt vào Ghi chú nếu có phạt
+                        string ghiChuThem = (soNgayTre > 0) ? $" | Trễ: {soNgayTre} ngày, Phạt: {tienPhat} VNĐ" : "";
+
+                        SqlCommand cmdUpdate = new SqlCommand(@"
+                            UPDATE PhieuMuon SET TrangThai = N'Đã trả', GhiChu = ISNULL(GhiChu,'') + @GC
+                            WHERE MaPhieuMuon = @MaP", conn, transaction);
+                        cmdUpdate.Parameters.AddWithValue("@MaP", request.MaPhieuMuon);
+                        cmdUpdate.Parameters.AddWithValue("@GC", ghiChuThem);
+                        cmdUpdate.ExecuteNonQuery();
                     }
 
                     transaction.Commit();
-                    return Json(new { success = true, message = "Xác nhận trả sách thành công!" });
+                    return Json(new { success = true, message = "Trả sách thành công!", soNgayTre, tienPhat });
                 }
                 catch (Exception ex)
                 {
                     transaction.Rollback();
-                    return Json(new { success = false, message = "Lỗi: " + ex.Message });
+                    return Json(new { success = false, message = ex.Message });
                 }
             }
         }
+    }
+
+    // ==========================================
+    // CÁC CLASS MODEL DÙNG ĐỂ HỨNG DATA TỪ VIEW
+    // ==========================================
+    public class PhieuMuonRequest
+    {
+        public string MaDocGia { get; set; }
+        public DateTime NgayMuon { get; set; }
+        public DateTime HanTra { get; set; }
+        public string GhiChu { get; set; }
+        public List<SachMuonDto> DanhSachSach { get; set; }
+    }
+
+    public class SachMuonDto
+    {
+        public string MaSach { get; set; }
+        public int SoLuong { get; set; }
+    }
+
+    public class TraSachRequest
+    {
+        public string MaPhieuMuon { get; set; }
+        public string GhiChu { get; set; }
+        public List<string> MaSachTra { get; set; }
     }
 }
