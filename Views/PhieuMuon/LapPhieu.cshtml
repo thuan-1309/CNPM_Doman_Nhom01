@@ -204,7 +204,8 @@
                 <div class="col-md-3">
                     <div class="d-flex align-items-center">
                         <label class="col-form-label me-3">Số lượng</label>
-                        <input type="number" class="form-control form-control-dark form-control-sm" id="txtSoLuongSach" value="1" min="1" style="width: 80px;">
+                        <input type="number" class="form-control form-control-dark form-control-sm"
+                               id="txtSoLuongSach" value="1" style="width: 80px;">
                     </div>
                 </div>
                 <div class="col-md-4 text-end">
@@ -274,9 +275,10 @@
             const soLuong = parseInt(document.getElementById('txtSoLuongSach').value);
 
             if (!sachSelect.value) return alert("Vui lòng chọn sách!");
-            if (soLuong <= 0) return alert("Số lượng phải lớn hơn 0!");
+            if (isNaN(soLuong) || soLuong <= 0) return alert("Số lượng phải lớn hơn 0!");
 
             const tonKho = parseInt(option.getAttribute('data-tonkho'));
+            if (tonKho === 0) return alert("Sách hiện đã hết trong kho!");
             if (soLuong > tonKho) return alert("Số lượng mượn vượt quá tồn kho!");
 
             const maSach = sachSelect.value;
@@ -315,6 +317,21 @@
             });
             document.getElementById('lblTongSoLuong').innerText = tong;
         }
+
+            // Xử lý khi chọn sách có tồn kho = 0
+        document.getElementById('cboSach').addEventListener('change', function () {
+            const option = this.options[this.selectedIndex];
+            const tonKho = parseInt(option.getAttribute('data-tonkho'));
+            const inputSL = document.getElementById('txtSoLuongSach');
+
+            if (this.value && tonKho === 0) {
+                inputSL.value = '';          // Xóa trắng, không hiện 1
+                inputSL.disabled = true;     // Disable input
+            } else {
+                inputSL.value = 1;           // Reset về 1
+                inputSL.disabled = false;    // Enable lại
+            }
+       });
 
         // 5. Gửi dữ liệu xuống CSDL (Fetch API)
         document.getElementById('btnLuuPhieu').addEventListener('click', function () {

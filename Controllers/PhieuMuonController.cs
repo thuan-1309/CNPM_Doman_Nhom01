@@ -49,7 +49,7 @@ namespace CNPM_Doman_Nhom01.Controllers
                 }
 
                 // SÁCH
-                SqlCommand cmdSach = new SqlCommand("SELECT MaSach, TenSach, TacGia, SoLuongTon FROM Sach WHERE SoLuongTon > 0", conn);
+                SqlCommand cmdSach = new SqlCommand("SELECT MaSach, TenSach, TacGia, SoLuongTon FROM Sach", conn);
                 using (var reader = cmdSach.ExecuteReader())
                 {
                     while (reader.Read())
@@ -62,7 +62,7 @@ namespace CNPM_Doman_Nhom01.Controllers
                             SoLuongTon = Convert.ToInt32(reader["SoLuongTon"])
                         });
                     }
-                }
+                }   
             }
 
             ViewBag.DocGias = listDocGia;
@@ -309,3 +309,4 @@ namespace CNPM_Doman_Nhom01.Controllers
         public List<string> MaSachTra { get; set; }
     }
 }
+
